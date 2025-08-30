@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>AutoU - Classificador de Emails</title>
+     <style>
+          body {
+               font-family: Inter, Arial;
+               max-width: 900px;
+               margin: 40px auto;
+               padding: 0 16px;
+               color: #111;
+          }
+     
+          .card {
+               border-radius: 12px;
+               padding: 18px;
+               box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+               background: white;
+          }
+     
+          h1 {
+               margin: 0 0 8px
+          }
+     
+          label {
+               display: block;
+               margin: 10px 0 6px;
+               font-weight: 600;
+          }
+     
+          textarea {
+               width: 100%;
+               min-height: 140px;
+               padding: 10px;
+               border-radius: 8px;
+               border: 1px solid #ddd;
+          }
+     
+          input[type=file] {
+               margin-top: 8px
+          }
+     
+          button {
+               background: #0066ff;
+               color: white;
+               padding: 10px 16px;
+               border-radius: 8px;
+               border: 0;
+               cursor: pointer
+          }
+     
+          .result {
+               margin-top: 20px
+          }
+     
+          .badge {
+               display: inline-block;
+               padding: 6px 10px;
+               border-radius: 999px;
+               font-weight: 700
+          }
+     
+          .prod {
+               background: #e6f7ff;
+               color: #0366d6
+          }
+     
+          .improd {
+               background: #fff4e6;
+               color: #a65a00
+          }
+     
+          pre {
+               background: #f7f7f8;
+               padding: 12px;
+               border-radius: 8px;
+          }
+     </style>
+</head>
+<body>
+     <div class="card">
+          <h1>AutoU — Classificador de Emails</h1>
+          <p>Suba um arquivo (.txt, .pdf) ou cole o texto do e-mail e clique em processar.</p>
+
+          <label for="file">Upload (.txt / .pdf)</label>
+          <input id="file" type="file" accept=".txt,.pdf" />
+
+          <label for="text">Ou cole o texto do e-mail</label>
+          <textarea id="text" placeholder="Cole o e-mail aqui..."></textarea>
+
+          <div style="margin-top:12px;">
+               <button id="send">Processar</button>
+          </div>
+
+          <div class="result" id="result"></div>
+     </div>
+
+     <script>
+          document.getElementById('send').addEventListener('click', async () => {
+               const fileEl = document.getElementById('file');
+               const textEl = document.getElementById('text');
+               const resultEl = document.getElementById('result');
+               resultEl.innerHTML = 'Processando...';
+
+               const form = new FormData();
+               if (fileEl.files.length > 0) {
+                    form.append('file', fileEl.files[0]);
+               } else {
+                    form.append('text', textEl.value || '');
+               }
+
+               try {
+                    const resp = await fetch('/api/process', { method: 'POST', body: form });
+                    if (!resp.ok) {
+                         const err = await resp.json();
+                         resultEl.innerHTML = '<pre>Erro: ' + JSON.stringify(err) + '</pre>';
+                         return;
+                    }
+                    const data = await resp.json();
+                    const badgeClass = data.category === 'Produtivo' ? 'prod' : 'improd';
+                    resultEl.innerHTML = `
+      <div><strong>Categoria:</strong> <span class="badge ${badgeClass}">${data.category}</span></div>
+      <div style="margin-top:10px"><strong>Confiança:</strong> ${data.confidence ? (data.confidence * 100).toFixed(1) + '%' : '—'}</div>
+      <div style="margin-top:12px"><strong>Resposta sugerida:</strong></div>
+      <pre>${data.suggested_response}</pre>
+      <div style="margin-top:12px"><strong>Pré-processamento (trecho):</strong></div>
+      <pre>${data.preprocessed_excerpt}</pre>
+    `;
+               } catch (err) {
+                    resultEl.innerHTML = '<pre>Erro interno: ' + err.toString() + '</pre>';
+               }
+          });
+     </script>
+</body>
+</html>

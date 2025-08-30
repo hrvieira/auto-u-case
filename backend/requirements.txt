@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+aiofiles
+PyPDF2
+scikit-learn
+joblib
+nltk
+pandas
+openai
+pytest
