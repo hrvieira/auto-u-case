@@ -7,6 +7,12 @@ from typing import List
 import io
 from PyPDF2 import PdfReader
 
+for resource in ['punkt', 'punkt_tab', 'stopwords']:
+    try:
+        nltk.data.find(f'tokenizers/{resource}')
+    except LookupError:
+        nltk.download(resource)
+
 STOPWORDS_PT = set(stopwords.words('portuguese')) if 'portuguese' in stopwords.fileids() else set()
 LEMMATIZER = WordNetLemmatizer()
 
