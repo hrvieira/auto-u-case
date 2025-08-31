@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import joblib
 import os
+import numpy as np
 from utils_text import preprocess_text, extract_text_from_pdf_bytes
 from ai_integration import classify_with_openai, generate_response_openai
 
@@ -12,60 +13,66 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
-MODEL_PATH = os.getenv('MODEL_PATH', './models/pipeline.joblib')
-model = joblib.load(MODEL_PATH) if os.path.exists(MODEL_PATH) else None
+MODEL_PATH = './models/email_classifier_pipeline.joblib'
+pipeline = None
+try:
+    pipeline = joblib.load(MODEL_PATH)
+    print(f"Pipeline de classificação carregado com sucesso de '{MODEL_PATH}'.")
+except FileNotFoundError:
+    print(f"AVISO: Pipeline de modelo não encontrado em '{MODEL_PATH}'. O fallback para OpenAI será usado.")
+except Exception as e:
+    print(f"Erro ao carregar o pipeline: {e}")
 
 @app.post("/api/process")
 async def process_email(text: str = Form(None), file: UploadFile = File(None)):
     if not text and not file:
-        return JSONResponse({"error": "Enviar 'text' ou um arquivo."}, status_code=400)
+        return JSONResponse({"error": "É necessário enviar 'text' ou um arquivo."}, status_code=400)
 
     raw_text = ""
     if file:
         content = await file.read()
-        if file.filename.lower().endswith('.pdf'):
+        if file.filename and file.filename.lower().endswith('.pdf'):
             raw_text = extract_text_from_pdf_bytes(content)
         else:
             raw_text = content.decode('utf-8', errors='ignore')
     else:
         raw_text = text
 
-    pre = preprocess_text(raw_text)
+    if not raw_text.strip():
+        return JSONResponse({"error": "Conteúdo do e-mail está vazio."}, status_code=400)
+    
+    processed_text = preprocess_text(raw_text)
 
     category, confidence = None, None
-    if model:
-        pred = model.predict([pre])[0]
-        category = pred
-        if hasattr(model, 'predict_proba'):
-            proba = model.predict_proba([pre])[0]
-            classes = model.classes_
-            conf_idx = list(classes).index(pred)
-            confidence = float(proba[conf_idx])
-    else:
-        category = classify_with_openai(raw_text)
 
+    if pipeline:
+        category = pipeline.predict([processed_text])[0]
+        probabilities = pipeline.predict_proba([processed_text])[0]
+        confidence = float(np.max(probabilities))
+    else:
+        result = classify_with_openai(raw_text)
+        category = result.get('category', 'Erro OpenAI')
+        confidence = result.get('confidence', 0.0)
     try:
-        suggested = generate_response_openai(raw_text, category)
-    except Exception:
-        suggested = (
-            "Obrigado pelo contato." if category == "Produtivo"
-            else "Agradecemos sua mensagem."
-        )
+        suggested_response = generate_response_openai(raw_text, category)
+    except Exception as e:
+        print(f"Erro ao gerar resposta com OpenAI: {e}")
+        suggested_response = "Não foi possível gerar uma sugestão no momento."
 
     return {
         "category": category,
         "confidence": confidence,
-        "suggested_response": suggested,
-        "preprocessed_excerpt": pre[:500]
+        "suggested_response": suggested_response,
+        "preprocessed_excerpt": processed_text[:500] + "..."
     }
 
 @app.get("/", response_class=HTMLResponse)
-def index():
+async def read_index():
     try:
         with open("../frontend/index.html", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
-    except Exception:
-        return HTMLResponse("<h3>Frontend não encontrado</h3>")
+    except FileNotFoundError:
+        return HTMLResponse("<h3>Arquivo frontend/index.html não encontrado.</h3>", status_code=404)
