@@ -25,3 +25,6 @@ python-dotenv
 # Testing
 # For running automated tests.
 pytest
+
+# spaCy Model (installed directly via URL)
+https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.7.0/pt_core_news_sm-3.7.0.tar.gz#egg=pt_core_news_sm
