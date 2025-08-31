@@ -1,11 +1,27 @@
+# Web Framework & Server
+# Handles the API, server execution, and file uploads.
 fastapi
 uvicorn[standard]
 python-multipart
 aiofiles
-PyPDF2
+
+# Machine Learning & Data Handling
+# For model creation, data manipulation, and numerical operations.
 scikit-learn
 joblib
-nltk
 pandas
+numpy
+
+# Natural Language Processing (NLP)
+# For text cleaning, tokenization, and lemmatization.
+spacy
+
+# Utilities & External APIs
+# For PDF reading, OpenAI integration, and environment variable management.
+PyPDF2
 openai
+python-dotenv
+
+# Testing
+# For running automated tests.
 pytest
