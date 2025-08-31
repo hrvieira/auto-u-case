@@ -5,9 +5,6 @@ from typing import List
 import io
 from PyPDF2 import PdfReader
 
-# Carrega modelo de português do spaCy
-# certifique-se de rodar antes no terminal:
-# python -m spacy download pt_core_news_sm
 nlp = spacy.load("pt_core_news_sm")
 
 def clean_text(text: str) -> str:
@@ -19,8 +16,8 @@ def clean_text(text: str) -> str:
     - remove pontuação
     """
     text = text.lower()
-    text = re.sub(r'\S+@\S+', ' ', text)  # remove e-mails
-    text = re.sub(r'http\S+|www.\S+', ' ', text)  # remove URLs
+    text = re.sub(r'\S+@\S+', ' ', text)
+    text = re.sub(r'http\S+|www.\S+', ' ', text)
     text = text.replace('\n', ' ').replace('\r', ' ')
     text = re.sub(r'\s+', ' ', text).strip()
     text = text.translate(str.maketrans('', '', string.punctuation))
