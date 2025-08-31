@@ -1,0 +1,21 @@
+# Virtual Environment
+venv
+.venv
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Development tools cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE configuration files
+.vscode/
+.idea/
+
+# Local environment files
+.env
