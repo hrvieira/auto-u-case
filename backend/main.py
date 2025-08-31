@@ -6,6 +6,9 @@ import os
 import numpy as np
 from .utils_text import preprocess_text, extract_text_from_pdf_bytes
 from .ai_integration import classify_with_openai, generate_response_openai
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
 
 app = FastAPI(title="AutoU Email Classifier")
 
@@ -16,7 +19,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL_PATH = './models/email_classifier_pipeline.joblib'
+MODEL_PATH = BASE_DIR / "models" / "email_classifier_pipeline.joblib"
+FRONTEND_FILE_PATH = BASE_DIR.parent / "frontend" / "index.html"
+
+
 pipeline = None
 try:
     pipeline = joblib.load(MODEL_PATH)
