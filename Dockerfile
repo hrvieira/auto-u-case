@@ -13,7 +13,6 @@ FROM python:3.10-slim
 WORKDIR /app
 
 COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
-COPY --from=builder /usr/local/share/spacy /usr/local/share/spacy
 
 COPY ./backend ./backend
 COPY ./frontend ./frontend
