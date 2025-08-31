@@ -4,11 +4,15 @@ from fastapi.middleware.cors import CORSMiddleware
 import joblib
 import os
 import numpy as np
-from .utils_text import preprocess_text, extract_text_from_pdf_bytes
-from .ai_integration import classify_with_openai, generate_response_openai
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
+
+MODEL_PATH = BASE_DIR / "models" / "email_classifier_pipeline.joblib"
+FRONTEND_FILE_PATH = BASE_DIR.parent / "frontend" / "index.html"
+
+from .utils_text import preprocess_text, extract_text_from_pdf_bytes
+from .ai_integration import classify_with_openai, generate_response_openai
 
 app = FastAPI(title="AutoU Email Classifier")
 
@@ -18,10 +22,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-MODEL_PATH = BASE_DIR / "models" / "email_classifier_pipeline.joblib"
-FRONTEND_FILE_PATH = BASE_DIR.parent / "frontend" / "index.html"
-
 
 pipeline = None
 try:
@@ -51,7 +51,6 @@ async def process_email(text: str = Form(None), file: UploadFile = File(None)):
         return JSONResponse({"error": "Conteúdo do e-mail está vazio."}, status_code=400)
     
     processed_text = preprocess_text(raw_text)
-
     category, confidence = None, None
 
     if pipeline:
@@ -62,6 +61,7 @@ async def process_email(text: str = Form(None), file: UploadFile = File(None)):
         result = classify_with_openai(raw_text)
         category = result.get('category', 'Erro OpenAI')
         confidence = result.get('confidence', 0.0)
+    
     try:
         suggested_response = generate_response_openai(raw_text, category)
     except Exception as e:
@@ -77,8 +77,9 @@ async def process_email(text: str = Form(None), file: UploadFile = File(None)):
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
+    """Serve o arquivo frontend."""
     try:
-        with open("../frontend/index.html", "r", encoding="utf-8") as f:
+        with open(FRONTEND_FILE_PATH, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
         return HTMLResponse("<h3>Arquivo frontend/index.html não encontrado.</h3>", status_code=404)
