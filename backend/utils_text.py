@@ -1,42 +1,55 @@
 import re
 import string
-import nltk
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
+import spacy
 from typing import List
 import io
 from PyPDF2 import PdfReader
 
-for resource in ['punkt', 'punkt_tab', 'stopwords']:
-    try:
-        nltk.data.find(f'tokenizers/{resource}')
-    except LookupError:
-        nltk.download(resource)
-
-STOPWORDS_PT = set(stopwords.words('portuguese')) if 'portuguese' in stopwords.fileids() else set()
-LEMMATIZER = WordNetLemmatizer()
+# Carrega modelo de português do spaCy
+# certifique-se de rodar antes no terminal:
+# python -m spacy download pt_core_news_sm
+nlp = spacy.load("pt_core_news_sm")
 
 def clean_text(text: str) -> str:
+    """
+    Limpa o texto:
+    - coloca em minúsculo
+    - remove e-mails, URLs, quebras de linha
+    - remove múltiplos espaços
+    - remove pontuação
+    """
     text = text.lower()
-    text = re.sub(r'\S+@\S+', ' ', text)
-    text = re.sub(r'http\S+|www.\S+', ' ', text)
+    text = re.sub(r'\S+@\S+', ' ', text)  # remove e-mails
+    text = re.sub(r'http\S+|www.\S+', ' ', text)  # remove URLs
     text = text.replace('\n', ' ').replace('\r', ' ')
     text = re.sub(r'\s+', ' ', text).strip()
     text = text.translate(str.maketrans('', '', string.punctuation))
     return text
 
 def tokenize_and_lemmatize(text: str) -> List[str]:
-    tokens = nltk.word_tokenize(text, language='portuguese')
-    tokens = [t for t in tokens if t not in STOPWORDS_PT and t.isalpha()]
-    lemmas = [LEMMATIZER.lemmatize(t) for t in tokens]
-    return lemmas
+    """
+    Tokeniza e lematiza usando spaCy:
+    - remove stopwords
+    - remove tokens que não são palavras (pontuação, números, etc.)
+    """
+    doc = nlp(text)
+    tokens = [token.lemma_ for token in doc if not token.is_stop and token.is_alpha]
+    return tokens
 
 def preprocess_text(text: str) -> str:
+    """
+    Executa o pipeline completo de pré-processamento:
+    1. limpeza
+    2. tokenização + lematização
+    """
     cleaned = clean_text(text)
     lemmas = tokenize_and_lemmatize(cleaned)
-    return ' '.join(lemmas)
+    return " ".join(lemmas)
 
 def extract_text_from_pdf_bytes(file_bytes: bytes) -> str:
+    """
+    Extrai texto de um arquivo PDF a partir de bytes.
+    """
     reader = PdfReader(io.BytesIO(file_bytes))
     text_pages = []
     for page in reader.pages:
