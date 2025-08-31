@@ -4,8 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import joblib
 import os
 import numpy as np
-from utils_text import preprocess_text, extract_text_from_pdf_bytes
-from ai_integration import classify_with_openai, generate_response_openai
+from .utils_text import preprocess_text, extract_text_from_pdf_bytes
+from .ai_integration import classify_with_openai, generate_response_openai
 
 app = FastAPI(title="AutoU Email Classifier")
 
